@@ -1,0 +1,413 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); color: var(--color-text-primary); background: transparent; }
+
+h2 { font-size: 18px; font-weight: 500; margin: 2rem 0 0.75rem; }
+h3 { font-size: 15px; font-weight: 500; margin: 1.5rem 0 0.5rem; color: var(--color-text-secondary); }
+
+.intro { font-size: 14px; color: var(--color-text-secondary); line-height: 1.7; margin-bottom: 1.5rem; }
+
+/* Nav pills */
+.nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1.5rem; }
+.pill {
+  padding: 5px 14px; border-radius: 999px; font-size: 13px; font-weight: 500;
+  border: 0.5px solid var(--color-border-secondary);
+  background: var(--color-background-primary);
+  color: var(--color-text-secondary);
+  cursor: pointer; transition: all .15s;
+}
+.pill:hover { background: var(--color-background-secondary); }
+.pill.active { background: var(--color-text-primary); color: var(--color-background-primary); border-color: transparent; }
+
+/* Sections */
+.section { display: none; }
+.section.active { display: block; }
+
+/* Table */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th {
+  text-align: left; padding: 8px 12px; font-weight: 500; font-size: 12px;
+  color: var(--color-text-secondary);
+  border-bottom: 0.5px solid var(--color-border-secondary);
+  background: var(--color-background-secondary);
+}
+td { padding: 10px 12px; border-bottom: 0.5px solid var(--color-border-tertiary); vertical-align: top; line-height: 1.5; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--color-background-secondary); }
+
+/* Complexity badges */
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 4px;
+  font-size: 11px; font-weight: 500; font-family: var(--font-mono);
+  white-space: nowrap;
+}
+.o1    { background: #D5F5E3; color: #1D6A35; }
+.ologn { background: #D6EAF8; color: #1A5276; }
+.on    { background: #FAEEDA; color: #7D6608; }
+.onn   { background: #FADBD8; color: #922B21; }
+
+/* Code block */
+.code {
+  background: var(--color-background-secondary);
+  border: 0.5px solid var(--color-border-tertiary);
+  border-radius: 8px; padding: 14px 16px;
+  font-family: var(--font-mono); font-size: 12px; line-height: 1.8;
+  margin: 0.75rem 0;
+  white-space: pre;
+  overflow-x: auto;
+}
+.cm { color: #6c757d; }
+.ck { color: #0066cc; }
+
+/* Callout */
+.callout {
+  border-left: 3px solid var(--color-border-secondary);
+  padding: 10px 14px;
+  background: var(--color-background-secondary);
+  border-radius: 0 8px 8px 0;
+  font-size: 13px; line-height: 1.6;
+  margin: 0.75rem 0;
+  color: var(--color-text-secondary);
+}
+.callout b { color: var(--color-text-primary); }
+
+/* Unreal badge */
+.utag {
+  display: inline-block; padding: 1px 7px; border-radius: 4px;
+  font-size: 11px; font-weight: 500;
+  background: #E8F4FD; color: #1A5276;
+  margin-left: 6px; vertical-align: middle;
+}
+
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0.75rem 0; }
+@media (max-width: 500px) { .row2 { grid-template-columns: 1fr; } }
+
+.card {
+  background: var(--color-background-primary);
+  border: 0.5px solid var(--color-border-tertiary);
+  border-radius: 8px; padding: 12px 14px;
+}
+.card-title { font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+.card-body  { font-size: 12px; color: var(--color-text-secondary); line-height: 1.6; }
+</style>
+</head>
+<body>
+<h2 style="margin-top:0">STL Containers & Complexité — Engine Dev</h2>
+<p class="intro">Choisir le bon container, c'est choisir le bon compromis entre complexité temporelle, empreinte mémoire et cohérence cache. En engine dev chaque choix impacte les perfs à grande échelle.</p>
+
+<div class="nav">
+  <div class="pill active" onclick="show('seq')">Séquentiels</div>
+  <div class="pill" onclick="show('assoc')">Associatifs</div>
+  <div class="pill" onclick="show('unreal')">Équivalents Unreal</div>
+  <div class="pill" onclick="show('patterns')">Patterns engine</div>
+  <div class="pill" onclick="show('leetcode')">Leetcode / Choix</div>
+</div>
+
+<!-- ═══ SÉQUENTIELS ═══ -->
+<div class="section active" id="sec-seq">
+<h3>Containers séquentiels</h3>
+<table>
+  <tr>
+    <th>Container</th><th>Accès</th><th>Insert/Erase (front)</th><th>Insert/Erase (back)</th><th>Insert (milieu)</th><th>Search</th>
+  </tr>
+  <tr>
+    <td><b>vector&lt;T&gt;</b></td>
+    <td><span class="badge o1">O(1)</span></td>
+    <td><span class="badge on">O(n)</span></td>
+    <td><span class="badge o1">O(1) amorti</span></td>
+    <td><span class="badge on">O(n)</span></td>
+    <td><span class="badge on">O(n)</span></td>
+  </tr>
+  <tr>
+    <td><b>deque&lt;T&gt;</b></td>
+    <td><span class="badge o1">O(1)</span></td>
+    <td><span class="badge o1">O(1) amorti</span></td>
+    <td><span class="badge o1">O(1) amorti</span></td>
+    <td><span class="badge on">O(n)</span></td>
+    <td><span class="badge on">O(n)</span></td>
+  </tr>
+  <tr>
+    <td><b>list&lt;T&gt;</b></td>
+    <td><span class="badge on">O(n)</span></td>
+    <td><span class="badge o1">O(1)</span></td>
+    <td><span class="badge o1">O(1)</span></td>
+    <td><span class="badge o1">O(1)*</span></td>
+    <td><span class="badge on">O(n)</span></td>
+  </tr>
+  <tr>
+    <td><b>array&lt;T,N&gt;</b></td>
+    <td><span class="badge o1">O(1)</span></td>
+    <td>—</td>
+    <td>—</td>
+    <td>—</td>
+    <td><span class="badge on">O(n)</span></td>
+  </tr>
+</table>
+<p style="font-size:11px;color:var(--color-text-secondary);margin-top:6px">* list::insert en O(1) seulement si on a déjà l'itérateur — la recherche de position reste O(n).</p>
+
+<div class="callout" style="margin-top:1rem">
+  <b>En engine dev :</b> <code>vector</code> est ton défaut absolu. Contiguous en mémoire = cache-friendly = traversal rapide pour systèmes ECS. <code>list</code> est quasi jamais justifié — ses insertions O(1) ne compensent pas le cache thrashing.
+</div>
+
+<div class="row2" style="margin-top:1rem">
+<div class="card">
+<div class="card-title">vector — cas d'usage engine</div>
+<div class="card-body">
+  Composants ECS (TransformComponent, MeshComponent)<br>
+  Draw call list (chaque frame)<br>
+  Vertex/index buffer CPU-side<br>
+  Liste d'entités actives
+</div>
+</div>
+<div class="card">
+<div class="card-title">array — cas d'usage engine</div>
+<div class="card-body">
+  Ring buffer de commandes GPU (taille fixe connue)<br>
+  Cache de matrices bones (skinning, N fixe)<br>
+  Uniform buffer padding (alignement garanti)
+</div>
+</div>
+</div>
+
+<div class="code"><span class="ck">// ✓ ECS : SoA avec vector, cache-friendly
+</span><span class="cm">struct TransformStorage {
+    std::vector&lt;glm::vec3&gt; positions;   <span class="cm">// contigu en mémoire</span>
+    std::vector&lt;glm::quat&gt; rotations;
+    std::vector&lt;glm::vec3&gt; scales;
+};
+</span>
+<span class="ck">// ✗ AoS avec list : cache thrashing garanti
+</span><span class="cm">// std::list&lt;Transform&gt; transforms; ← chaque nœud = alloc séparée</span></div>
+</div>
+
+<!-- ═══ ASSOCIATIFS ═══ -->
+<div class="section" id="sec-assoc">
+<h3>Containers associatifs</h3>
+<table>
+  <tr><th>Container</th><th>Find</th><th>Insert</th><th>Erase</th><th>Ordonné ?</th><th>Mémoire</th></tr>
+  <tr>
+    <td><b>map&lt;K,V&gt;</b></td>
+    <td><span class="badge ologn">O(log n)</span></td>
+    <td><span class="badge ologn">O(log n)</span></td>
+    <td><span class="badge ologn">O(log n)</span></td>
+    <td>✓ (arbre)</td>
+    <td>Élevée (RB-tree)</td>
+  </tr>
+  <tr>
+    <td><b>unordered_map&lt;K,V&gt;</b></td>
+    <td><span class="badge o1">O(1) moy</span></td>
+    <td><span class="badge o1">O(1) moy</span></td>
+    <td><span class="badge o1">O(1) moy</span></td>
+    <td>✗</td>
+    <td>Moyenne (buckets)</td>
+  </tr>
+  <tr>
+    <td><b>set&lt;K&gt;</b></td>
+    <td><span class="badge ologn">O(log n)</span></td>
+    <td><span class="badge ologn">O(log n)</span></td>
+    <td><span class="badge ologn">O(log n)</span></td>
+    <td>✓ (arbre)</td>
+    <td>Élevée</td>
+  </tr>
+  <tr>
+    <td><b>unordered_set&lt;K&gt;</b></td>
+    <td><span class="badge o1">O(1) moy</span></td>
+    <td><span class="badge o1">O(1) moy</span></td>
+    <td><span class="badge o1">O(1) moy</span></td>
+    <td>✗</td>
+    <td>Moyenne</td>
+  </tr>
+</table>
+
+<div class="callout" style="margin-top:1rem">
+  <b>O(1) moyen ≠ O(1) garanti.</b> <code>unordered_map</code> peut dégénérer en O(n) en cas de collisions (hash trop fréquentes sur les mêmes buckets). Toujours fournir un bon hash pour les clés custom (EntityID, AssetHandle).
+</div>
+
+<div class="code"><span class="ck">// Asset manager : unordered_map pour lookup O(1) par nom</span>
+std::unordered_map&lt;std::string, std::shared_ptr&lt;Texture&gt;&gt; textureCache;
+
+<span class="ck">// EntityID custom : hash nécessaire</span>
+struct EntityIDHash {
+    size_t operator()(EntityID id) const {
+        return std::hash&lt;uint32_t&gt;{}(id.index) ^ (id.generation &lt;&lt; 16);
+    }
+};
+std::unordered_map&lt;EntityID, RenderComponent*, EntityIDHash&gt; renderMap;
+
+<span class="ck">// Quand utiliser map (ordonné) ? Rare en engine.
+// Ex : timeline d'events triée par timestamp</span>
+std::map&lt;float, AnimationEvent&gt; timeline; <span class="cm">// clé = temps</span></div>
+
+<div class="row2">
+<div class="card">
+<div class="card-title">unordered_map — moteur</div>
+<div class="card-body">
+  Asset cache (nom → ressource)<br>
+  EntityID → ComponentIndex<br>
+  ShaderHandle → VkPipeline<br>
+  Texture name → GPU handle
+</div>
+</div>
+<div class="card">
+<div class="card-title">map — moteur (rare)</div>
+<div class="card-body">
+  Timeline d'events (triée par temps)<br>
+  LOD ordered par distance<br>
+  Quand l'ordre de clé compte
+</div>
+</div>
+</div>
+</div>
+
+<!-- ═══ UNREAL ═══ -->
+<div class="section" id="sec-unreal">
+<h3>Équivalents Unreal Engine <span class="utag">UE5</span></h3>
+<table>
+  <tr><th>STL</th><th>Unreal</th><th>Différences notables</th></tr>
+  <tr>
+    <td><b>vector&lt;T&gt;</b></td>
+    <td><b>TArray&lt;T&gt;</b></td>
+    <td>API similaire. Intégré au GC Unreal (UPROPERTY). <code>Reserve()</code>, <code>Add()</code>, <code>RemoveSwap()</code> (O(1) si ordre sans importance).</td>
+  </tr>
+  <tr>
+    <td><b>unordered_map&lt;K,V&gt;</b></td>
+    <td><b>TMap&lt;K,V&gt;</b></td>
+    <td>Hash map mais implémentation différente. Pas directement compatible STL. Supporte UPROPERTY. <code>FindOrAdd()</code>, <code>Find()</code> retourne un pointeur.</td>
+  </tr>
+  <tr>
+    <td><b>unordered_set&lt;K&gt;</b></td>
+    <td><b>TSet&lt;K&gt;</b></td>
+    <td>Hash set. <code>Contains()</code>, <code>Add()</code>, <code>Remove()</code>. Compact, bon pour listes d'entités uniques.</td>
+  </tr>
+  <tr>
+    <td><b>array&lt;T,N&gt;</b></td>
+    <td><b>TArray&lt;T&gt;</b> + <code>Reserve</code></td>
+    <td>Pas d'équivalent direct taille fixe compile-time. Utiliser TArray avec Reserve ou un C-array aligné.</td>
+  </tr>
+  <tr>
+    <td><b>string</b></td>
+    <td><b>FString / FName</b></td>
+    <td><code>FName</code> = string hashée, comparaison O(1), idéale pour les asset names. <code>FString</code> = string mutable, coûteuse.</td>
+  </tr>
+</table>
+
+<div class="callout">
+  <b>Piège fréquent :</b> mélanger <code>TMap</code> et <code>std::unordered_map</code> dans un même module. Préférer les types Unreal dans le code engine UE pour la compatibilité GC et les outils de debug (Insights, Memory profiler).
+</div>
+
+<div class="code"><span class="ck">// TArray : RemoveSwap si ordre sans importance → O(1) vs O(n)</span>
+TArray&lt;AActor*&gt; activeEnemies;
+activeEnemies.RemoveSwap(deadEnemy); <span class="cm">// swap avec le dernier, pop back</span>
+
+<span class="ck">// FName pour asset keys : comparaison O(1) via hash</span>
+TMap&lt;FName, UTexture2D*&gt; textureRegistry;
+textureRegistry.Add(FName("Rock_Albedo"), albedoTex);
+auto* tex = textureRegistry.Find(FName("Rock_Albedo")); <span class="cm">// ptr ou nullptr</span>
+
+<span class="ck">// TSet pour entités uniques (ex : entités dans un frustum)</span>
+TSet&lt;AActor*&gt; visibleActors;
+visibleActors.Add(actor);
+if (visibleActors.Contains(actor)) { <span class="cm">/* ... */</span> }</div>
+</div>
+
+<!-- ═══ PATTERNS ENGINE ═══ -->
+<div class="section" id="sec-patterns">
+<h3>Patterns de performance en engine dev</h3>
+
+<div class="card" style="margin-bottom:12px">
+<div class="card-title">1 — Flat array + index plutôt que pointeurs</div>
+<div class="card-body">
+<div class="code"><span class="cm">// ✗ Pointer soup : cache miss à chaque déréférencement</span>
+std::vector&lt;Component*&gt; comps;
+
+<span class="cm">// ✓ Flat array dense : traversal O(n) cache-friendly</span>
+std::vector&lt;TransformComponent&gt; transforms; <span class="cm">// contigu</span>
+uint32_t entityIndex = entityToIndex[entityID]; <span class="cm">// lookup O(1)</span></div>
+</div>
+</div>
+
+<div class="card" style="margin-bottom:12px">
+<div class="card-title">2 — Reserve() avant une boucle d'insertions</div>
+<div class="card-body">
+<div class="code"><span class="cm">// Sans reserve : réallocations multiples, copies O(n) à chaque fois</span>
+std::vector&lt;DrawCall&gt; drawCalls;
+drawCalls.reserve(MAX_DRAW_CALLS); <span class="cm">// 1 seule alloc</span>
+for (auto& mesh : visibleMeshes) drawCalls.push_back(buildDrawCall(mesh));</div>
+</div>
+</div>
+
+<div class="card" style="margin-bottom:12px">
+<div class="card-title">3 — unordered_map avec clé numérique &gt; string</div>
+<div class="card-body">
+<div class="code"><span class="cm">// ✗ Hash de string à chaque lookup : coûteux</span>
+std::unordered_map&lt;std::string, Pipeline&gt; pipelineCache;
+
+<span class="cm">// ✓ Hash d'un uint64 (hash du nom précalculé, ou ID numérique)</span>
+std::unordered_map&lt;uint64_t, Pipeline&gt; pipelineCache;
+uint64_t key = hashString("PBR_Opaque");
+pipelineCache[key] = pipeline;</div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-title">4 — swap-and-pop pour suppression O(1) dans un vector</div>
+<div class="card-body">
+<div class="code"><span class="cm">// ✗ erase(it) : O(n) à cause du shift</span>
+entities.erase(std::find(entities.begin(), entities.end(), dead));
+
+<span class="cm">// ✓ swap avec le dernier + pop_back : O(1)</span>
+auto it = std::find(entities.begin(), entities.end(), dead);
+std::swap(*it, entities.back());
+entities.pop_back();</div>
+</div>
+</div>
+</div>
+
+<!-- ═══ LEETCODE ═══ -->
+<div class="section" id="sec-leetcode">
+<h3>Choisir le bon container — grille de décision</h3>
+<table>
+  <tr><th>Besoin</th><th>Container</th><th>Pourquoi</th></tr>
+  <tr><td>Accès par index, traversal rapide</td><td><b>vector</b></td><td>O(1) accès, contigu, cache-friendly</td></tr>
+  <tr><td>Lookup fréquent par clé</td><td><b>unordered_map</b></td><td>O(1) moyen find/insert</td></tr>
+  <tr><td>Existence unique d'un élément</td><td><b>unordered_set</b></td><td>O(1) contains, pas de doublons</td></tr>
+  <tr><td>Élements triés, parcours en ordre</td><td><b>map / set</b></td><td>O(log n), itération ordonnée garantie</td></tr>
+  <tr><td>File FIFO</td><td><b>queue (deque)</b></td><td>push back / pop front O(1)</td></tr>
+  <tr><td>Pile LIFO</td><td><b>stack (vector)</b></td><td>push/pop back O(1)</td></tr>
+  <tr><td>Min/Max rapide</td><td><b>priority_queue</b></td><td>top O(1), push/pop O(log n)</td></tr>
+  <tr><td>Taille fixe connue compile-time</td><td><b>array&lt;T,N&gt;</b></td><td>Zero overhead, stack-allocated</td></tr>
+</table>
+
+<div class="callout" style="margin-top:1rem">
+  <b>Réflexe Leetcode :</b> si le problème demande "est-ce que X existe" → <code>unordered_set</code>. "Combien de fois X apparaît" → <code>unordered_map</code>. "Le minimum/maximum" → <code>priority_queue</code>. "Dans l'ordre" → <code>map</code> ou tri de <code>vector</code>.
+</div>
+
+<div class="code"><span class="ck">// Two Sum → unordered_map, O(n) total</span>
+std::unordered_map&lt;int,int&gt; seen;
+for (int i = 0; i &lt; nums.size(); i++) {
+    int complement = target - nums[i];
+    if (seen.count(complement)) return {seen[complement], i};
+    seen[nums[i]] = i;
+}
+
+<span class="ck">// Longest substring without repeat → unordered_set, sliding window</span>
+std::unordered_set&lt;char&gt; window;
+
+<span class="ck">// Merge k sorted lists → priority_queue (min-heap)</span>
+std::priority_queue&lt;int, std::vector&lt;int&gt;, std::greater&lt;int&gt;&gt; minHeap;</div>
+</div>
+
+<script>
+function show(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>
