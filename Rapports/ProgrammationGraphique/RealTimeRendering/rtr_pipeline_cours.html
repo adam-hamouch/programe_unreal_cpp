@@ -1,0 +1,217 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);color:var(--color-text-primary);background:transparent;font-size:14px;line-height:1.7}
+.nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1.5rem}
+.pill{padding:5px 14px;border-radius:999px;font-size:13px;font-weight:500;border:.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-secondary);cursor:pointer;transition:all .15s}
+.pill:hover{background:var(--color-background-secondary)}
+.pill.active{background:var(--color-text-primary);color:var(--color-background-primary);border-color:transparent}
+.sec{display:none}.sec.active{display:block}
+.card{background:var(--color-background-primary);border:.5px solid var(--color-border-tertiary);border-radius:12px;padding:14px 16px;margin:10px 0}
+.card-title{font-size:13px;font-weight:500;margin-bottom:6px}
+.card-body{font-size:13px;color:var(--color-text-secondary);line-height:1.6}
+.code{background:var(--color-background-secondary);border:.5px solid var(--color-border-tertiary);border-radius:8px;padding:10px 14px;font-family:var(--font-mono);font-size:12px;line-height:1.8;margin:8px 0;overflow-x:auto;white-space:pre}
+.callout{border-left:3px solid var(--color-border-secondary);padding:10px 14px;background:var(--color-background-secondary);border-radius:0 8px 8px 0;font-size:13px;line-height:1.6;margin:8px 0;color:var(--color-text-secondary)}
+.warn{border-left:3px solid #E24B4A;padding:10px 14px;background:var(--color-background-secondary);border-radius:0 8px 8px 0;font-size:13px;line-height:1.6;margin:8px 0;color:var(--color-text-secondary)}
+.tip{border-left:3px solid #1D9E75;padding:10px 14px;background:var(--color-background-secondary);border-radius:0 8px 8px 0;font-size:13px;line-height:1.6;margin:8px 0;color:var(--color-text-secondary)}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
+.b-blue{background:#E6F1FB;color:#185FA5}
+.b-amber{background:#FAEEDA;color:#854F0B}
+.b-teal{background:#E1F5EE;color:#0F6E56}
+.b-gray{background:#F1EFE8;color:#5F5E5A}
+.b-coral{background:#FAECE7;color:#993C1D}
+.b-purple{background:#EEEDFE;color:#534AB7}
+p{margin:.3rem 0 .8rem;font-size:13px;color:var(--color-text-secondary);line-height:1.6}
+h3{font-size:15px;font-weight:500;margin:1.5rem 0 .4rem}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0}
+@media(max-width:480px){.row2{grid-template-columns:1fr}}
+</style>
+
+<div style="padding:1rem 0 0">
+<div class="nav">
+  <div class="pill active" onclick="show('app')">Application Stage</div>
+  <div class="pill" onclick="show('vertex')">Vertex Shading</div>
+  <div class="pill" onclick="show('optional')">Stages optionnels</div>
+  <div class="pill" onclick="show('clip')">Clipping</div>
+  <div class="pill" onclick="show('raster')">Rasterization</div>
+</div>
+
+<!-- APPLICATION STAGE -->
+<div class="sec active" id="sec-app">
+<h3 style="margin-top:0">Application Stage</h3>
+<p>C'est la première étape du pipeline, entièrement exécutée sur le <strong>CPU</strong>. C'est toi qui la codes intégralement — contrôle total, optimisations libres.</p>
+
+<div class="row2">
+<div class="card">
+<div class="card-title">Ce qui s'y passe</div>
+<div class="card-body">
+  Gestion de la scène, frustum culling, tri des draw calls, input, IA, physique, animation. Tout ce qui tourne avant que les données arrivent au GPU.
+</div>
+</div>
+<div class="card">
+<div class="card-title">Levier principal d'optimisation</div>
+<div class="card-body">
+  Multithreading du recording des command buffers. Et déplacer certains calculs vers des <strong>compute shaders</strong> GPU (culling, particles, skinning).
+</div>
+</div>
+</div>
+
+<h3>Compute shaders</h3>
+<p>Certaines tâches de l'application stage peuvent être déportées sur le GPU via des <strong>compute shaders</strong> — programmes GPU qui tournent en dehors du pipeline graphique classique (pas de vertices, pas de rasterisation).</p>
+
+<div class="callout">Le GPU est un processeur massivement parallèle. Une RTX 4070 a <strong>5888 CUDA cores</strong> capables de traiter des dizaines de milliers d'opérations simultanées. Un i9 a 24 cœurs. Pour le même calcul répété N fois sur des données différentes, le GPU est bien plus rapide.</div>
+
+<div class="row2">
+<div class="card">
+<div class="card-title">Cas d'usage compute shader</div>
+<div class="card-body">
+  Frustum culling GPU (10k AABB en parallèle), simulation de particules, post-processing, animation (matrices de skinning), physics broad phase.
+</div>
+</div>
+<div class="card">
+<div class="card-title">Limite du GPU</div>
+<div class="card-body">
+  Un warp = 32 threads exécutent la <em>même</em> instruction. Les branchements complexes (if/else différents par thread) causent la <strong>warp divergence</strong> — la moitié des cores est idle.
+</div>
+</div>
+</div>
+
+<div class="tip"><strong>Sortie de l'application stage :</strong> une liste de primitives géométriques (triangles, lignes, points) avec leurs données associées, envoyée au geometry stage pour traitement GPU.</div>
+</div>
+
+<!-- VERTEX SHADING -->
+<div class="sec" id="sec-vertex">
+<h3 style="margin-top:0">Vertex Shading</h3>
+<p>Le vertex shader tourne sur chaque vertex individuellement. Son rôle principal : calculer la position finale du vertex à l'écran. Il peut aussi calculer des données supplémentaires (normales, UV, couleurs) transmises aux stages suivants.</p>
+
+<h3>Les espaces de transformation</h3>
+<p>Un mesh passe par plusieurs espaces successifs avant d'arriver à l'écran :</p>
+
+<div class="card">
+<div class="card-body" style="line-height:2">
+  <span class="badge b-gray">Model space</span> → <span class="badge b-blue">Model transform (MVP)</span> → <span class="badge b-teal">World space</span> → <span class="badge b-blue">View transform</span> → <span class="badge b-amber">View/Eye space</span> → <span class="badge b-blue">Projection</span> → <span class="badge b-coral">Clip space</span> → <span class="badge b-purple">NDC</span> → <span class="badge b-gray">Screen space</span>
+</div>
+</div>
+
+<div class="row2">
+<div class="card">
+<div class="card-title">Model space → World space</div>
+<div class="card-body">La model transform positionne et oriente le mesh dans le monde. Plusieurs instances du même mesh peuvent avoir des transforms différentes sans dupliquer la géométrie.</div>
+</div>
+<div class="card">
+<div class="card-title">World space → View space</div>
+<div class="card-body">La view transform place la caméra à l'origine, regardant vers -Z, Y vers le haut. Simplifie le clipping et la projection — tout est relatif à la caméra.</div>
+</div>
+</div>
+
+<h3>Projection</h3>
+<div class="row2">
+<div class="card">
+<div class="card-title"><span class="badge b-blue">Orthographique</span></div>
+<div class="card-body">Vue volume = boîte rectangulaire. Les lignes parallèles restent parallèles. Utilisé pour les vues techniques, éditeurs 2D.</div>
+</div>
+<div class="card">
+<div class="card-title"><span class="badge b-amber">Perspective</span></div>
+<div class="card-body">Vue volume = frustum (pyramide tronquée). Les objets éloignés paraissent plus petits. Correspond à la perception humaine — utilisé dans les jeux.</div>
+</div>
+</div>
+
+<div class="callout">Après projection, les coordonnées sont en <strong>clip coordinates</strong> (homogènes, avant division par w). Le GPU sort toujours ces coordonnées du vertex shader pour que le stage de clipping fonctionne correctement.</div>
+</div>
+
+<!-- STAGES OPTIONNELS -->
+<div class="sec" id="sec-optional">
+<h3 style="margin-top:0">Stages optionnels</h3>
+<p>Après le vertex shader, trois stages optionnels peuvent s'enchaîner dans cet ordre. Leur disponibilité dépend du hardware.</p>
+
+<div class="card" style="margin-bottom:12px">
+<div class="card-title">1. Tessellation <span class="badge b-teal" style="margin-left:6px">Hull → Tessellator → Domain</span></div>
+<div class="card-body">
+  Subdivise des patches de vertices en un plus grand nombre de triangles. Permet d'adapter la densité géométrique à la distance caméra — proche = beaucoup de triangles, loin = peu. Typiquement utilisé pour les terrains et les surfaces courbes.
+</div>
+</div>
+
+<div class="card" style="margin-bottom:12px">
+<div class="card-title">2. Geometry Shader</div>
+<div class="card-body">
+  Prend des primitives en entrée et peut en générer de nouvelles. Moins puissant que la tessellation, mais utile pour la génération de particules — un point en entrée devient un quad face caméra en sortie. Utilisation limitée en pratique moderne (souvent remplacé par les compute shaders).
+</div>
+</div>
+
+<div class="card">
+<div class="card-title">3. Stream Output</div>
+<div class="card-body">
+  Permet de récupérer les vertices processés dans un buffer GPU sans passer par la rasterisation. Le GPU devient un moteur de géométrie — les données peuvent être réutilisées par le CPU ou en passe GPU suivante. Typiquement pour les simulations de particules.
+</div>
+</div>
+
+<div class="tip">Ces trois stages sont rarement utilisés en rendu moderne. Le compute shader couvre la plupart de leurs cas d'usage avec plus de flexibilité.</div>
+</div>
+
+<!-- CLIPPING -->
+<div class="sec" id="sec-clip">
+<h3 style="margin-top:0">Clipping &amp; Screen Mapping</h3>
+
+<h3>Clipping</h3>
+<p>Seules les primitives dans le view volume doivent être rendues. Le clipping élimine ou coupe les primitives qui débordent.</p>
+
+<div class="row2">
+<div class="card">
+<div class="card-title">Entièrement dans le frustum</div>
+<div class="card-body">Transmise telle quelle au stage suivant.</div>
+</div>
+<div class="card">
+<div class="card-title">Entièrement hors du frustum</div>
+<div class="card-body">Éliminée, ne va pas plus loin dans le pipeline.</div>
+</div>
+</div>
+<div class="card" style="margin-top:0">
+<div class="card-title">Partiellement dans le frustum</div>
+<div class="card-body">Clippée contre le view volume. Les vertices hors volume sont remplacés par de nouveaux vertices aux intersections. La projection en amont fait que le clipping se fait toujours contre le même unit cube — ce qui simplifie et uniformise le calcul.</div>
+</div>
+
+<div class="callout">Après clipping, une <strong>division perspective</strong> est effectuée (division par w) pour passer en <strong>NDC</strong> (Normalized Device Coordinates) — un cube de (-1,-1,-1) à (1,1,1).</div>
+
+<h3>Screen Mapping</h3>
+<p>Les coordonnées NDC sont transformées en coordonnées écran (pixels). X et Y sont mappés sur la fenêtre, Z est mappé sur [0,1] pour le depth buffer. À noter : OpenGL place l'origine (0,0) en bas à gauche, DirectX en haut à gauche — une source fréquente de confusion lors de transitions entre APIs.</p>
+
+<div class="warn"><strong>En Vulkan</strong> : Y est inversé par rapport à OpenGL. (0,0) est en haut à gauche. À prendre en compte dans la projection matrix ou avec <code>VK_KHR_maintenance1</code> qui permet d'inverser le viewport.</div>
+</div>
+
+<!-- RASTERIZATION -->
+<div class="sec" id="sec-raster">
+<h3 style="margin-top:0">Rasterization</h3>
+<p>La rasterisation convertit les triangles 2D (en screen space) en fragments — les pixels potentiels qui couvrent la surface du triangle. C'est la jonction entre le geometry processing et le pixel processing.</p>
+
+<h3>Triangle Setup</h3>
+<p>Calcule les différentielles, les équations d'arêtes et autres données nécessaires pour l'étape suivante. Effectué par hardware fixe — pas programmable.</p>
+
+<h3>Triangle Traversal</h3>
+<p>Pour chaque pixel dont le centre est couvert par le triangle, un <strong>fragment</strong> est généré. Les attributs du fragment (profondeur, UV, normales, couleurs) sont interpolés depuis les trois vertices du triangle.</p>
+
+<div class="row2">
+<div class="card">
+<div class="card-title">Point sampling</div>
+<div class="card-body">Un point au centre du pixel. Si le centre est dans le triangle → pixel couvert. Simple, mais aliasing visible sur les bords.</div>
+</div>
+<div class="card">
+<div class="card-title">MSAA</div>
+<div class="card-body">Plusieurs samples par pixel. Améliore la qualité des bords. La couverture est calculée par sample, mais le shading peut être mutualisé.</div>
+</div>
+</div>
+
+<div class="callout"><strong>Interpolation perspective-correct :</strong> les attributs ne s'interpolent pas linéairement en screen space avec la projection perspective. La rasterisation applique une correction pour que l'interpolation soit correcte en 3D — sinon les textures se déforment sur les triangles obliques.</div>
+
+<div class="tip">Les fragments générés ici sont ensuite envoyés au <strong>pixel/fragment shader</strong> pour calculer la couleur finale, puis au <strong>merging stage</strong> (depth test, stencil, blending) avant d'atterrir dans le framebuffer.</div>
+</div>
+
+</div>
+
+<script>
+function show(id){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
